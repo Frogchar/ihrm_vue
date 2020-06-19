@@ -53,7 +53,10 @@
                 查看
               </router-link>
               <el-button @click="handleRole(scope.row)" type="text" size="small">分配角色</el-button>
-              <el-button @click="handleDelete(scope.row)" type="text" size="small">删除</el-button>
+              <!--
+              <el-button v-if="show('point-user-delete')" @click="handleDelete(scope.row)" type="text" size="small">删除</el-button>
+              -->
+              <el-button  @click="handleDelete(scope.row)" type="text" size="small">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -66,7 +69,7 @@
         <!-- 新增员工弹层 -->
         <component v-bind:is="employeesAdd" ref="addUser" @doQuery="doQuery"></component>
         <!--分配角色组件 -->
-
+        <component v-bind:is="addRole" ref="addRole"></component>
       </el-card>
     </div>
   </div>
@@ -77,14 +80,17 @@ import constantApi from '@/api/constant/employees'
 import {list,remove} from "@/api/base/users"
 import PageTool from './../../components/page/page-tool'
 import employeesAdd from './../components/add'
+import addRole from './../components/addRole'
+import {hasPermissionPoint} from '@/utils/permission'
 export default {
   name: 'employeesList',
   components: {
-    PageTool,employeesAdd
+    PageTool,employeesAdd,addRole
   },
   data() {
     return {
       employeesAdd: 'employeesAdd',
+      addRole: 'addRole',
       baseData: constantApi,
       dataList: [],
       counts: '',
@@ -95,6 +101,9 @@ export default {
     }
   },
   methods: {
+    show(name) {
+      return hasPermissionPoint(name)
+    },
     // 业务方法
     doQuery(params) {
         list(this.requestParameters)
@@ -127,12 +136,17 @@ export default {
         }
       ).then(() => {
           remove({ id: item.id })
-            .then(response => {
-              this.$message.success('删除成功' + '!')
-              this.doQuery();
+            .then(res => {
+              this.$message({message:res.data.message,type:res.data.success?'success':'error'})
+              if(res.data.success) {
+                this.doQuery();
+              }
             })
         })
-    }
+    },
+    handleRole(item) {
+      this.$refs.addRole.toAssignPrem(item.id)
+    },
   },
   // 创建完毕状态
   created: function() {
